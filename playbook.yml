@@ -4,6 +4,9 @@
   become: yes
   become_user: root
 
+  vars:
+    nfs_share_folder: /srv/nfsshare
+
   tasks:
     - name: insall nfs-utils
       yum:
@@ -12,9 +15,11 @@
 
     - name: ensure nfs-share exists
       file: >
-        path="/var/nfsshare"
+        path="{{ nfs_share_folder }}"
         state=directory
         mode=0777
+        owner=nfsnobody
+        group=nfsnobody
         recurse=true
 
     - name: start the services
@@ -29,8 +34,8 @@
         - nfs-idmap
 
     - name: export the folder
-      copy:
-        src: exports
+      template:
+        src: exports.j2
         dest: /etc/exports
       notify:
         - restart nfs
