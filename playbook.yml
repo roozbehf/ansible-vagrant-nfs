@@ -1,0 +1,42 @@
+---
+- hosts: all
+  become_method: sudo
+  become: yes
+  become_user: root
+
+  tasks:
+    - name: insall nfs-utils
+      yum:
+        name: nfs-utils
+        state: present
+
+    - name: ensure nfs-share exists
+      file: >
+        path="/var/nfsshare"
+        state=directory
+        mode=0777
+        recurse=true
+
+    - name: start the services
+      service:
+        name: "{{ item }}"
+        enabled: yes
+        state: started
+      with_items:
+        - rpcbind
+        - nfs-server
+        - nfs-lock
+        - nfs-idmap
+
+    - name: export the folder
+      copy:
+        src: exports
+        dest: /etc/exports
+      notify:
+        - restart nfs
+
+  handlers:
+    - name: restart nfs
+      service:
+        name: nfs-server
+        state: restarted
